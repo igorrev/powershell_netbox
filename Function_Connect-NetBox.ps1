@@ -17,8 +17,10 @@
     }
  }
 
- $resp = Invoke-RestMethod -Method Get -Uri $global:NetBoxBaseUrl
+ #$resp = Invoke-RestMethod -Method Get -Uri $global:NetBoxBaseUrl
+ $resp = Invoke-WebRequest -Method Get -Uri $global:NetBoxBaseUrl
+ $r=([system.Text.Encoding]::UTF8.GetString($resp.RawContentStream.ToArray()) | ConvertFrom-Json).results 
  
- return $resp
+ return $r
  
 }
