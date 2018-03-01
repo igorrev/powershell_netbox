@@ -122,5 +122,72 @@ function Get-NetBoxSite{
  
 }
 
+function Get-NetBoxRegion{
+ 
+    Param(
+    [parameter(Mandatory=$false,
+    HelpMessage="Enter NetBox server name or IP with http:// or https:// prefix")]
+    [ValidatePattern("(^http(s)?://.*)?")] [String]$BaseUrl,
+    
+    [parameter(Mandatory=$false)] [String]$Token = "",
+    [parameter(Mandatory=$false)] [int]$id = 0,
+    [parameter(Mandatory=$false)] [String]$slug = ""
+    )
+ 
+    if ($BaseUrl -ne "") {
+        $url = "/api/dcim/regions"
+    }
+    else {
+        $url = "/dcim/regions"
+    }
+    
+    if ($id -ne 0) {
+        $url += "/$id"
+    }
+
+    $query =@{}
+    if ($slug -ne "") {$query.Add("slug",$slug)}
+
+    if ($query.Count -ge 1) {$url += '?' + (($query.GetEnumerator() | % { "$($_.Key)=$($_.Value)" }) -join '&')}
+
+    $r = Make-NetBoxRequest -Url $url -BaseUrl $BaseUrl -Token $Token
+ 
+    return $r
+ 
+}
+
+function Get-NetBoxRack{
+ 
+    Param(
+    [parameter(Mandatory=$false,
+    HelpMessage="Enter NetBox server name or IP with http:// or https:// prefix")]
+    [ValidatePattern("(^http(s)?://.*)?")] [String]$BaseUrl,
+    
+    [parameter(Mandatory=$false)] [String]$Token = "",
+    [parameter(Mandatory=$false)] [int]$id = 0,
+    [parameter(Mandatory=$false)] [String]$slug = ""
+    )
+ 
+    if ($BaseUrl -ne "") {
+        $url = "/api/dcim/racks"
+    }
+    else {
+        $url = "/dcim/racks"
+    }
+    
+    if ($id -ne 0) {
+        $url += "/$id"
+    }
+
+    $query =@{}
+    if ($slug -ne "") {$query.Add("slug",$slug)}
+
+    if ($query.Count -ge 1) {$url += '?' + (($query.GetEnumerator() | % { "$($_.Key)=$($_.Value)" }) -join '&')}
+
+    $r = Make-NetBoxRequest -Url $url -BaseUrl $BaseUrl -Token $Token
+ 
+    return $r
+ 
+}
 
 Export-ModuleMember -Function Connect-*,Get-*
