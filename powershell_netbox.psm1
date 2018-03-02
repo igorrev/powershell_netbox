@@ -12,7 +12,13 @@ Param(
     [AllowEmptyString()]
     [ValidatePattern("^(http(s)?://.*)?")] [String]$BaseUrl,
 
-    [parameter(Mandatory=$false)] [String]$Token = ""
+    [parameter(Mandatory=$false)] [String]$Token = "",
+
+    [parameter(Mandatory=$false)]
+    [ValidateSet("Get","Put","Patch")] [String]$HTTPmethod = "Get",
+
+    [parameter(Mandatory=$false)]
+    [String]$HTTPbody
 )
     
     if ($Token -eq "") {
@@ -32,9 +38,17 @@ Param(
         $RequestUrl = $global:NetBoxBaseUrl + $Url
     }
 
+    #debug
+    #$MyInvocation.BoundParameters
+
     ###write-host $RequestUrl
     #Invoke-WebRequest -Method Get -Uri $RequestUrl
-    $resp = Invoke-WebRequest -Method Get -Uri $RequestUrl
+    if ($HTTPbody) {
+        $resp = Invoke-WebRequest -Method $HTTPmethod -Uri $RequestUrl -Headers $headers -ContentType "application/json" -Body ([System.Text.Encoding]::UTF8.GetBytes($HTTPbody))
+    }
+    else {
+        $resp = Invoke-WebRequest -Method $HTTPmethod -Uri $RequestUrl -Headers $headers -ContentType "application/json"
+    }
     $r=[system.Text.Encoding]::UTF8.GetString($resp.RawContentStream.ToArray()) | ConvertFrom-Json
 
     if ($r.results.Count -gt 0) {
@@ -190,4 +204,87 @@ function Get-NetBoxRack{
  
 }
 
-Export-ModuleMember -Function Connect-*,Get-*
+function Get-NetBoxIPaddress{
+ 
+    Param(
+    [parameter(Mandatory=$false,
+    HelpMessage="Enter NetBox server name or IP with http:// or https:// prefix")]
+    [ValidatePattern("(^http(s)?://.*)?")] [String]$BaseUrl,
+    
+    [parameter(Mandatory=$false)] [String]$Token = "",
+    [parameter(Mandatory=$false)] [int]$id = 0,
+    [parameter(Mandatory=$false)] [String]$AddressMask = ""
+    #[parameter(Mandatory=$false)] [String]$slug = ""
+    )
+ 
+    if ($BaseUrl -ne "") {
+        $url = "/api/ipam/ip-addresses"
+    }
+    else {
+        $url = "/ipam/ip-addresses"
+    }
+    
+    if ($id -ne 0) {
+        $url += "/$id"
+    }
+
+    $query =@{}
+    if ($slug -ne "") {$query.Add("slug",$slug)}
+
+    if ($query.Count -ge 1) {$url += '?' + (($query.GetEnumerator() | % { "$($_.Key)=$($_.Value)" }) -join '&')}
+
+    $r = Make-NetBoxRequest -Url $url -BaseUrl $BaseUrl -Token $Token -HTTPmethod Get
+
+    if ($AddressMask -ne "") {
+        
+    }
+
+ 
+    return $r
+ 
+}
+
+function Set-NetBoxIPaddress{
+ 
+    Param(
+    [parameter(Mandatory=$false,
+    HelpMessage="Enter NetBox server name or IP with http:// or https:// prefix")]
+    [ValidatePattern("(^http(s)?://.*)?")] [String]$BaseUrl,
+    
+    [parameter(Mandatory=$false)] [String]$Token = "",
+    [parameter(Mandatory=$true)] [int]$id,
+    [parameter(Mandatory=$false)] [String]$Description,
+    [parameter(Mandatory=$false)] [int]$Status = 0
+    #[parameter(Mandatory=$false)] [String]$slug = ""
+    )
+ 
+    if ($BaseUrl -ne "") {
+        $url = "/api/ipam/ip-addresses"
+    }
+    else {
+        $url = "/ipam/ip-addresses"
+    }
+    
+    $url += "/$id/"
+
+    $ip = @{
+        id = $id
+    }
+
+    if ($PSBoundParameters.ContainsKey('Description')) {$ip.add("description",$Description)}
+    if ($Status -ne 0) {$ip.add("status",$Status)}
+
+    #$query =@{}
+    #if ($slug -ne "") {$query.Add("slug",$slug)}
+
+    #if ($query.Count -ge 1) {$url += '?' + (($query.GetEnumerator() | % { "$($_.Key)=$($_.Value)" }) -join '&')}
+
+    $r = Make-NetBoxRequest -Url $url -BaseUrl $BaseUrl -Token $Token -HTTPmethod Patch -HTTPbody ($ip | ConvertTo-Json)
+ 
+    return $r
+ 
+}
+
+
+
+Export-ModuleMember -Function Connect-*,Get-*,Set-*
