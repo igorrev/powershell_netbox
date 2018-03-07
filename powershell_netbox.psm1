@@ -15,7 +15,7 @@ Param(
     [parameter(Mandatory=$false)] [String]$Token = "",
 
     [parameter(Mandatory=$false)]
-    [ValidateSet("Get","Put","Patch")] [String]$HTTPmethod = "Get",
+    [ValidateSet("Get","Put","Patch","Post")] [String]$HTTPmethod = "Get",
 
     [parameter(Mandatory=$false)]
     [String]$HTTPbody
@@ -285,6 +285,41 @@ function Set-NetBoxIPaddress{
  
 }
 
+function Add-NetBoxIPaddress{
+ 
+    Param(
+    [parameter(Mandatory=$false,
+    HelpMessage="Enter NetBox server name or IP with http:// or https:// prefix")]
+    [ValidatePattern("(^http(s)?://.*)?")] [String]$BaseUrl,
+    
+    [parameter(Mandatory=$false)] [String]$Token = "",
+    [parameter(Mandatory=$true)] [String]$Address,
+    [parameter(Mandatory=$false)] [String]$Description,
+    [parameter(Mandatory=$false)] [int]$Status = 0
+    #[parameter(Mandatory=$false)] [String]$slug = ""
+    )
+ 
+    if ($BaseUrl -ne "") {
+        $url = "/api/ipam/ip-addresses/"
+    }
+    else {
+        $url = "/ipam/ip-addresses/"
+    }
+   
+    # mandatory
+    $ip = @{
+        address = $Address
+    }
+
+    # optional
+    if ($PSBoundParameters.ContainsKey('Description')) {$ip.add("description",$Description)}
+    if ($Status -ne 0) {$ip.add("status",$Status)}
+
+    $r = Make-NetBoxRequest -Url $url -BaseUrl $BaseUrl -Token $Token -HTTPmethod Post -HTTPbody ($ip | ConvertTo-Json)
+ 
+    return $r
+ 
+}
 
 
-Export-ModuleMember -Function Connect-*,Get-*,Set-*
+Export-ModuleMember -Function Connect-*,Get-*,Set-*,Add-*
